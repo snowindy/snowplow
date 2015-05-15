@@ -67,7 +67,7 @@ import common.utils.JsonUtils
  * we support.
  */
 abstract class AbstractSource(config: KinesisEnrichConfig, igluResolver: Resolver,
-                              enrichmentRegistry: EnrichmentRegistry) {
+                              enrichmentRegistry: ThreadLocal[EnrichmentRegistry]) {
   
   val MaxRecordSize = 51200
 
@@ -121,7 +121,7 @@ abstract class AbstractSource(config: KinesisEnrichConfig, igluResolver: Resolve
   def enrichEvents(binaryData: Array[Byte]): List[Validation[(String, String), (String, String)]] = {
     val canonicalInput: ValidatedMaybeCollectorPayload = ThriftLoader.toCollectorPayload(binaryData)
     val processedEvents: List[ValidationNel[String, EnrichedEvent]] = EtlPipeline.processEvents(
-      enrichmentRegistry, s"kinesis-${generated.Settings.version}", System.currentTimeMillis.toString, canonicalInput)
+      enrichmentRegistry.get, s"kinesis-${generated.Settings.version}", System.currentTimeMillis.toString, canonicalInput)
     processedEvents.map(validatedMaybeEvent => {
       validatedMaybeEvent match {
         case Success(co) => (tabSeparateEnrichedEvent(co) -> co.user_ipaddress).success

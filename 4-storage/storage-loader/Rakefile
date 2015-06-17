@@ -1,2 +1,21 @@
 #!/usr/bin/env rake
-require "bundler/gem_tasks"
+
+require 'rake/clean'
+
+APP_NAME = 'snowplow-storage-loader'
+JAR_PATH = "deploy/#{APP_NAME}.jar"
+EXECUTABLE_PATH = "deploy/#{APP_NAME}"
+
+task :install_dependencies do
+  `gem install bundler`
+  `bundle install`
+end
+
+task :build_executable do
+  `bundle exec warble`
+  `cat bin/jarx-stub.sh #{JAR_PATH} > #{EXECUTABLE_PATH}`
+  `chmod +x #{EXECUTABLE_PATH}`
+  CLEAN.include(JAR_PATH)
+end
+
+task :default => [:install_dependencies, :build_executable, :clean]
